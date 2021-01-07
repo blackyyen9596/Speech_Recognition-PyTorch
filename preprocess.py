@@ -25,7 +25,7 @@ class Aduio_DataLoader(Dataset):
         # print(filename)
         wb_wav, _ = librosa.load(filename, sr=self.sr)
 
-        # 取 幀
+        # 取幀
         if len(wb_wav) >= self.dim:
             max_audio_start = len(wb_wav) - self.dim
             audio_start = np.random.randint(0, max_audio_start)
