@@ -27,9 +27,10 @@ class IterMeter(object):
 
 
 def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
-          epoch, train_epoch_size, iter_meter, experiment):
-    print('running epoch: {} / {}'.format((epoch), epochs))
+          epoch, train_epoch_size, val_epoch_size, iter_meter, experiment):
+    print('running epoch: {} / {}'.format(epoch, epochs))
     start_time = time.time()
+    # 訓練模式
     model.train()
     data_len = len(train_loader.dataset)
     with tqdm(total=train_epoch_size,
@@ -68,10 +69,8 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
                 pbar.update(1)
                 start_time = time.time()
 
-
-def test(model, device, test_loader, criterion, epochs, epoch, val_epoch_size,
-         iter_meter, experiment):
     start_time = time.time()
+    # 評估模式
     model.eval()
     test_loss = 0
     test_cer, test_wer = [], []
@@ -113,6 +112,9 @@ def test(model, device, test_loader, criterion, epochs, epoch, val_epoch_size,
     #     .format(test_loss, avg_cer, avg_wer))
     print('Test set: Average loss: {:.4f}, Average WER: {:.4f}\n'.format(
         test_loss, avg_wer))
+    torch.save(
+        model.state_dict(), './logs/epoch%d-val_loss%.4f-avg_wer%.4f.pth' %
+        (epoch, total_loss / test_loss, avg_wer))
 
 
 def main(learning_rate=5e-4,
@@ -183,9 +185,8 @@ def main(learning_rate=5e-4,
     iter_meter = IterMeter()
     for epoch in range(1, epochs + 1):
         train(model, device, train_loader, criterion, optimizer, scheduler,
-              epochs, epoch, train_epoch_size, iter_meter, experiment)
-        test(model, device, test_loader, criterion, epochs, epoch,
-             val_epoch_size, iter_meter, experiment)
+              epochs, epoch, train_epoch_size, val_epoch_size, iter_meter,
+              experiment)
 
 
 if __name__ == "__main__":
