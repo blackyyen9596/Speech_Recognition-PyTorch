@@ -40,10 +40,10 @@ class Aduio_DataLoader(Dataset):
         return len(self.wav_list)
 
 
-train_set = Aduio_DataLoader(
-    r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
-train_loader = DataLoader(train_set, batch_size=8, shuffle=True)
+# train_set = Aduio_DataLoader(
+#     r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
+# train_loader = DataLoader(train_set, batch_size=8, shuffle=True)
 
-for (i, data) in enumerate(train_loader):
-    wav_data, wav_name = data
-    # print(wav_data.shape)  # torch.Size([8, 8192])
+# for (i, data) in enumerate(train_loader):
+#     wav_data, wav_name = data
+#     print(wav_data.shape)  # torch.Size([8, 8192])
