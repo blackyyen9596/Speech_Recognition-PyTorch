@@ -46,4 +46,4 @@ train_loader = DataLoader(train_set, batch_size=8, shuffle=True)
 
 for (i, data) in enumerate(train_loader):
     wav_data, wav_name = data
-    print(wav_data.shape)  # torch.Size([8, 8192])
+    # print(wav_data.shape)  # torch.Size([8, 8192])
