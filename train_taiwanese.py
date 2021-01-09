@@ -139,15 +139,15 @@ def main(learning_rate=5e-4,
     use_cuda = torch.cuda.is_available()
     torch.manual_seed(7)
     device = torch.device("cuda" if use_cuda else "cpu")
-    # if not os.path.isdir("./data"):
-    #     os.makedirs("./data")
-    # train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
-    #                                                 url=train_url,
-    #                                                 download=True)
-    # test_dataset = torchaudio.datasets.LIBRISPEECH("./data",
-    #                                                url=test_url,
-    #                                                download=True)
-    # kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+    if not os.path.isdir("./data"):
+        os.makedirs("./data")
+    train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
+                                                    url=train_url,
+                                                    download=True)
+    test_dataset = torchaudio.datasets.LIBRISPEECH("./data",
+                                                   url=test_url,
+                                                   download=True)
+    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
         dataset=train_dataset,
         batch_size=hparams['batch_size'],
