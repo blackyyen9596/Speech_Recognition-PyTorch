@@ -141,13 +141,10 @@ def main(learning_rate=5e-4,
     device = torch.device("cuda" if use_cuda else "cpu")
     if not os.path.isdir("./data"):
         os.makedirs("./data")
-    # train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
-    #                                                 url=train_url,
-    #                                                 download=True)
-    train_dataset = Aduio_DataLoader('D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
-    # test_dataset = torchaudio.datasets.LIBRISPEECH("./data",
-    #                                                url=test_url,
-    #                                                download=True)
+
+    train_dataset = Aduio_DataLoader(r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+    test_dataset = Aduio_DataLoader(r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
         dataset=train_dataset,
