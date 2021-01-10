@@ -125,7 +125,7 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
 
 
 def main(learning_rate=5e-4,
-         batch_size=3,
+         batch_size=2,
          epochs=10,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
