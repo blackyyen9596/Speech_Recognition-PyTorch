@@ -125,7 +125,7 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
 
 
 def main(learning_rate=5e-4,
-         batch_size=2,
+         batch_size=20,
          epochs=10,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
@@ -148,7 +148,7 @@ def main(learning_rate=5e-4,
     train_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
     test_dataset = Aduio_DataLoader(
-        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\valid')
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\val')
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
@@ -163,7 +163,7 @@ def main(learning_rate=5e-4,
         dataset=test_dataset,
         batch_size=hparams['batch_size'],
         shuffle=False,
-        collate_fn=lambda x: data_processing(x, 'valid'),
+        collate_fn=lambda x: data_processing(x, 'val'),
         num_workers=0,
         pin_memory=True)
     model = SpeechRecognitionModel(hparams['n_cnn_layers'],
