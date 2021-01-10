@@ -64,15 +64,15 @@ class TextTransform:
         return ''.join(string).replace('', ' ')
 
 
-train_audio_transforms = nn.Sequential(
+def data_processing(data, data_type="train"):
+
+    train_audio_transforms = nn.Sequential(
     torchaudio.transforms.MelSpectrogram(sample_rate=8000, n_mels=128),
     torchaudio.transforms.FrequencyMasking(freq_mask_param=15),
     torchaudio.transforms.TimeMasking(time_mask_param=35))
-valid_audio_transforms = torchaudio.transforms.MelSpectrogram(sample_rate=8000, n_mels=128)
-text_transform = TextTransform()
+    valid_audio_transforms = torchaudio.transforms.MelSpectrogram(sample_rate=8000, n_mels=128)
+    text_transform = TextTransform()
 
-
-def data_processing(data, data_type="train"):
     spectrograms = []
     labels = []
     input_lengths = []

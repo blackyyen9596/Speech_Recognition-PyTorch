@@ -14,6 +14,7 @@ import time
 import math
 from audio_dataloader import Aduio_DataLoader
 
+# RuntimeError: CUDA error: unspecified launch failure
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 
@@ -124,7 +125,7 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
 
 
 def main(learning_rate=5e-4,
-         batch_size=4,
+         batch_size=3,
          epochs=10,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
