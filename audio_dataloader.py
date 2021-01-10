@@ -12,7 +12,7 @@ from torch.utils import data
 
 
 class Aduio_DataLoader(Dataset):
-    def __init__(self, data_folder, sr=16000, dimension=600000):
+    def __init__(self, data_folder, sr=16000, dimension=160000):
         self.data_folder = data_folder
         self.sr = sr
         self.dim = dimension

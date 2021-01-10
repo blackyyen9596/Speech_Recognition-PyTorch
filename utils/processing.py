@@ -67,7 +67,7 @@ class TextTransform:
 train_audio_transforms = nn.Sequential(
     torchaudio.transforms.MelSpectrogram(sample_rate=16000,
                                          n_mels=128,
-                                         n_fft=500),
+                                         n_fft=400),
     torchaudio.transforms.FrequencyMasking(freq_mask_param=15),
     torchaudio.transforms.TimeMasking(time_mask_param=35))
 valid_audio_transforms = torchaudio.transforms.MelSpectrogram(
