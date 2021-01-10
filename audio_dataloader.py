@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 import pandas as pd
 import torch
 from utils.processing import TextTransform, data_processing, GreedyDecoder
+
 class Aduio_DataLoader(Dataset):
     def __init__(self, data_folder, sr=16000, dimension=8192):
         self.data_folder = data_folder
@@ -28,7 +29,7 @@ class Aduio_DataLoader(Dataset):
         label = df.loc[int(filename)].values[0]
         wb_wav, sr = librosa.load(filepath, sr=self.sr)
 
-        # 取幀
+        # 調整音頻長度
         if len(wb_wav) >= self.dim:
             max_audio_start = len(wb_wav) - self.dim
             audio_start = np.random.randint(0, max_audio_start)
