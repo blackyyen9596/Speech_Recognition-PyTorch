@@ -14,6 +14,9 @@ import time
 import math
 from audio_dataloader import Aduio_DataLoader
 
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
+
 class IterMeter(object):
     """keeps track of total iterations"""
     def __init__(self):
@@ -26,8 +29,9 @@ class IterMeter(object):
         return self.val
 
 
-def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
-          epoch, train_epoch_size, val_epoch_size, iter_meter, experiment):
+def train(model, device, train_loader, test_loader, criterion, optimizer,
+          scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
+          iter_meter, experiment):
     print('running epoch: {} / {}'.format(epoch, epochs))
     start_time = time.time()
     # 訓練模式
@@ -60,9 +64,10 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
                 iter_meter.step()
 
                 waste_time = time.time() - start_time
+                train_loss = loss.item()
                 pbar.set_postfix(
                     **{
-                        'total_loss': loss.item(),
+                        'total_loss': train_loss,
                         'lr': round(scheduler.get_last_lr()[0], 5),
                         'step/s': waste_time
                     })
@@ -96,8 +101,9 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
                             wer(reference=decoded_targets[j],
                                 hypothesis=decoded_preds[j]))
                     waste_time = time.time() - start_time
+                    val_loss = loss.item()
                     pbar.set_postfix(**{
-                        'total_loss': loss.item(),
+                        'total_loss': val_loss,
                         'step/s': waste_time
                     })
                     pbar.update(1)
@@ -114,11 +120,11 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
         test_loss, avg_wer))
     torch.save(
         model.state_dict(), './logs/epoch%d-val_loss%.4f-avg_wer%.4f.pth' %
-        (epoch, total_loss / test_loss, avg_wer))
+        (epoch, test_loss, avg_wer))
 
 
 def main(learning_rate=5e-4,
-         batch_size=20,
+         batch_size=4,
          epochs=10,
          train_url="train-clean-100",
          test_url="test-clean",
@@ -142,8 +148,10 @@ def main(learning_rate=5e-4,
     if not os.path.isdir("./data"):
         os.makedirs("./data")
 
-    train_dataset = Aduio_DataLoader(r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
-    test_dataset = Aduio_DataLoader(r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+    train_dataset = Aduio_DataLoader(
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+    test_dataset = Aduio_DataLoader(
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
@@ -153,7 +161,7 @@ def main(learning_rate=5e-4,
         collate_fn=lambda x: data_processing(x, 'train'),
         num_workers=0,
         pin_memory=True)
-    
+
     test_loader = data.DataLoader(
         dataset=test_dataset,
         batch_size=hparams['batch_size'],
@@ -183,9 +191,9 @@ def main(learning_rate=5e-4,
     val_epoch_size = math.ceil(val_data_len / batch_size)
     iter_meter = IterMeter()
     for epoch in range(1, epochs + 1):
-        train(model, device, train_loader, criterion, optimizer, scheduler,
-              epochs, epoch, train_epoch_size, val_epoch_size, iter_meter,
-              experiment)
+        train(model, device, train_loader, test_loader, criterion, optimizer,
+              scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
+              iter_meter, experiment)
 
 
 if __name__ == "__main__":

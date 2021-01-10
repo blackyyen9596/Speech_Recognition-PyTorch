@@ -26,8 +26,9 @@ class IterMeter(object):
         return self.val
 
 
-def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
-          epoch, train_epoch_size, val_epoch_size, iter_meter, experiment):
+def train(model, device, train_loader, test_loader, criterion, optimizer,
+          scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
+          iter_meter, experiment):
     print('running epoch: {} / {}'.format(epoch, epochs))
     start_time = time.time()
     # 訓練模式
@@ -118,7 +119,7 @@ def train(model, device, train_loader, criterion, optimizer, scheduler, epochs,
 
 
 def main(learning_rate=5e-4,
-         batch_size=20,
+         batch_size=10,
          epochs=10,
          train_url="train-clean-100",
          test_url="test-clean",

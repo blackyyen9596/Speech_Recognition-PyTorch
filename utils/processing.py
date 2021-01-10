@@ -65,7 +65,7 @@ class TextTransform:
 
 
 train_audio_transforms = nn.Sequential(
-    torchaudio.transforms.MelSpectrogram(sample_rate=16000, n_mels=128),
+    torchaudio.transforms.MelSpectrogram(sample_rate=8000, n_mels=128),
     torchaudio.transforms.FrequencyMasking(freq_mask_param=15),
     torchaudio.transforms.TimeMasking(time_mask_param=35))
 valid_audio_transforms = torchaudio.transforms.MelSpectrogram()
@@ -77,6 +77,7 @@ def data_processing(data, data_type="train"):
     labels = []
     input_lengths = []
     label_lengths = []
+    # for (waveform, _, utterance, _, _, _) in data:
     for (waveform, _, utterance) in data:
         if data_type == 'train':
             spec = train_audio_transforms(waveform).squeeze(0).transpose(0, 1)

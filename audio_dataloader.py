@@ -7,6 +7,10 @@ from torch.utils.data import DataLoader
 import pandas as pd
 import torch
 from utils.processing import TextTransform, data_processing, GreedyDecoder
+import torchaudio
+from torch.utils import data
+
+
 class Aduio_DataLoader(Dataset):
     def __init__(self, data_folder, sr=16000, dimension=8192):
         self.data_folder = data_folder
@@ -21,37 +25,55 @@ class Aduio_DataLoader(Dataset):
                 self.wav_list.append(os.path.join(root, filename))
 
     def __getitem__(self, item):
-        df = pd.read_csv(r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train-toneless_update.csv', encoding="utf8", index_col='id')
+        df = pd.read_csv(
+            r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train-toneless_update.csv',
+            encoding="utf8",
+            index_col='id')
         # 讀取一個音訊檔，返回每個音訊資料
         filepath = self.wav_list[item]
         filename = os.path.split(filepath)[-1].split('.')[0]
-        label = df.loc[int(filename)].values[0]
+        utterance = df.loc[int(filename)].values[0]
         wb_wav, sr = librosa.load(filepath, sr=self.sr)
 
         # 取幀
-        if len(wb_wav) >= self.dim:
-            max_audio_start = len(wb_wav) - self.dim
-            audio_start = np.random.randint(0, max_audio_start)
-            wb_wav = wb_wav[audio_start:audio_start + self.dim]
-        else:
-            wb_wav = np.pad(wb_wav, (0, self.dim - len(wb_wav)), "constant")
-        
-        # return wb_wav, filename
-        return torch.tensor(wb_wav), sr, label
+        # if len(wb_wav) >= self.dim:
+        #     max_audio_start = len(wb_wav) - self.dim
+        #     audio_start = np.random.randint(0, max_audio_start)
+        #     wb_wav = wb_wav[audio_start:audio_start + self.dim]
+        # else:
+        #     wb_wav = np.pad(wb_wav, (0, self.dim - len(wb_wav)), "constant")
+
+        waveform = torch.tensor(wb_wav)
+        sample_rate = sr
+
+        return waveform, sample_rate, utterance
+
     def __len__(self):
         # 音訊檔的總數
         return len(self.wav_list)
 
- 
+
 # train_set = Aduio_DataLoader(
-#     r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
-# train_loader = DataLoader(dataset = train_set, batch_size=8, shuffle=False,collate_fn=lambda x: data_processing(x, 'train'),)
+#     r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=8000)
+# train_loader = DataLoader(dataset=train_set,
+#                           batch_size=8,
+#                           shuffle=False,
+#                           collate_fn=lambda x: data_processing(x, 'train'))
+
+# train_url = "train-clean-100"
+
+# train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
+#                                                 url=train_url,
+#                                                 download=True)
+
+# train_loader = data.DataLoader(
+#     dataset=train_dataset,
+#     batch_size=20,
+#     shuffle=True,
+#     num_workers=0,
+#     pin_memory=True,
+#     collate_fn=lambda x: data_processing(x, 'train'))
 
 # for (i, data) in enumerate(train_loader):
-#     spectrograms, labels, input_lengths, label_lengths  = data
-#     print(spectrograms)
-    # wb_wav, filename = data
-    # print(type(wb_wav), type(self.sr), type(label))
-    # print(wb_wav, filename)
-    # print(data)
-    # print(wav_data.shape)  # torch.Size([8, 8192])
+#     spectrograms, labels, input_lengths, label_lengths = data
+#     print(input_lengths)
