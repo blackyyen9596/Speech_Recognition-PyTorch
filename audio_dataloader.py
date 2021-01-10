@@ -35,7 +35,7 @@ class Aduio_DataLoader(Dataset):
         utterance = df.loc[int(filename)].values[0]
         wb_wav, sr = librosa.load(filepath, sr=self.sr)
 
-        # 取幀
+        # #固定音頻長度
         # if len(wb_wav) >= self.dim:
         #     max_audio_start = len(wb_wav) - self.dim
         #     audio_start = np.random.randint(0, max_audio_start)

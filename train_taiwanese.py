@@ -149,7 +149,7 @@ def main(learning_rate=5e-4,
     train_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
     test_dataset = Aduio_DataLoader(
-        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\valid')
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
@@ -172,7 +172,7 @@ def main(learning_rate=5e-4,
                                    hparams['n_class'], hparams['n_feats'],
                                    hparams['stride'],
                                    hparams['dropout']).to(device)
-    print(model)
+    # print(model)
     print('Num Model Parameters',
           sum([param.nelement() for param in model.parameters()]))
     optimizer = optim.AdamW(model.parameters(), hparams['learning_rate'])
