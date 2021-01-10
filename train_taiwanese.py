@@ -144,8 +144,6 @@ def main(learning_rate=5e-4,
     use_cuda = torch.cuda.is_available()
     torch.manual_seed(7)
     device = torch.device("cuda" if use_cuda else "cpu")
-    if not os.path.isdir("./data"):
-        os.makedirs("./data")
 
     train_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')

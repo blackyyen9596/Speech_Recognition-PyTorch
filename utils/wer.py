@@ -101,7 +101,7 @@ def test():
     wer = levenshtein_distance(reference=reference, hypothesis=hypothesis)
     print(wer)
 
-    reference = list('今天天氣好好呦')
+    reference = list('今天天氣很好呦')
     hypothesis = list('今天天氣很好耶')
     wer = levenshtein_distance(reference=reference, hypothesis=hypothesis)
     print(wer)
