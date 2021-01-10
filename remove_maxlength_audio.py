@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 path = r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train_org'
 filelist = os.listdir(path)
-maxduration = 10
+maxduration = 20
 for filename in (filelist):
     file_path = os.path.join(path, filename)
     y, sr = librosa.load(file_path)
