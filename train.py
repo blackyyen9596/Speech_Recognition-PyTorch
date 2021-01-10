@@ -185,9 +185,9 @@ def main(learning_rate=5e-4,
     val_epoch_size = math.ceil(val_data_len / batch_size)
     iter_meter = IterMeter()
     for epoch in range(1, epochs + 1):
-        train(model, device, train_loader, criterion, optimizer, scheduler,
-              epochs, epoch, train_epoch_size, val_epoch_size, iter_meter,
-              experiment)
+        train(model, device, train_loader, test_loader, criterion, optimizer,
+              scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
+              iter_meter, experiment)
 
 
 if __name__ == "__main__":
