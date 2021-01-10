@@ -13,4 +13,3 @@ for filename in (filelist):
         maxduration = duration
         print(maxduration)
         print(filename)
-
