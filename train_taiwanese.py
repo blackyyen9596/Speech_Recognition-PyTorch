@@ -13,9 +13,17 @@ from tqdm import tqdm
 import time
 import math
 from audio_dataloader import Aduio_DataLoader
+import matplotlib.pyplot as plt
 
 # RuntimeError: CUDA error: unspecified launch failure
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+    torch.backends.cudnn.benchmark = True
+    torch.cuda.empty_cache()
+else:
+    device = torch.device('cpu')
 
 
 class IterMeter(object):
@@ -30,7 +38,7 @@ class IterMeter(object):
         return self.val
 
 
-def train(model, device, train_loader, test_loader, criterion, optimizer,
+def train(model, device, train_loader, val_loader, criterion, optimizer,
           scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
           iter_meter, experiment):
     print('running epoch: {} / {}'.format(epoch, epochs))
@@ -38,6 +46,7 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
     # 訓練模式
     model.train()
     data_len = len(train_loader.dataset)
+
     with tqdm(total=train_epoch_size,
               desc='train',
               postfix=dict,
@@ -45,6 +54,7 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
         with experiment.train():
             for batch_idx, _data in enumerate(train_loader):
                 spectrograms, labels, input_lengths, label_lengths = _data
+                print(input_lengths)
                 spectrograms, labels = spectrograms.to(device), labels.to(
                     device)
                 optimizer.zero_grad()
@@ -78,13 +88,13 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
     start_time = time.time()
     # 評估模式
     model.eval()
-    test_loss = 0
-    test_cer, test_wer = [], []
+    val_loss = 0
+    val_cer, val_wer = [], []
     with tqdm(total=val_epoch_size, desc='val', postfix=dict,
               mininterval=0.3) as pbar:
         with experiment.test():
             with torch.no_grad():
-                for I, _data in enumerate(test_loader):
+                for I, _data in enumerate(val_loader):
                     spectrograms, labels, input_lengths, label_lengths = _data
                     spectrograms, labels = spectrograms.to(device), labels.to(
                         device)
@@ -93,12 +103,12 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
                     output = output.transpose(0, 1)  # (time, batch, n_class)
                     loss = criterion(output, labels, input_lengths,
                                      label_lengths)
-                    test_loss += loss.item() / len(test_loader)
+                    val_loss += loss.item() / len(val_loader)
                     decoded_preds, decoded_targets = GreedyDecoder(
                         output.transpose(0, 1), labels, label_lengths)
                     for j in range(len(decoded_preds)):
-                        # test_cer.append(cer(decoded_targets[j], decoded_preds[j]))
-                        test_wer.append(
+                        # val_cer.append(cer(decoded_targets[j], decoded_preds[j]))
+                        val_wer.append(
                             wer(reference=decoded_targets[j],
                                 hypothesis=decoded_preds[j]))
                     waste_time = time.time() - start_time
@@ -109,24 +119,25 @@ def train(model, device, train_loader, test_loader, criterion, optimizer,
                     })
                     pbar.update(1)
                     start_time = time.time()
-    # avg_cer = sum(test_cer) / len(test_cer)
-    avg_wer = sum(test_wer) / len(test_wer)
-    experiment.log_metric('test_loss', test_loss, step=iter_meter.get())
+    # avg_cer = sum(val_cer) / len(val_cer)
+    avg_wer = sum(val_wer) / len(val_wer)
+    experiment.log_metric('val_loss', val_loss, step=iter_meter.get())
     # experiment.log_metric('cer', avg_cer, step=iter_meter.get())
     experiment.log_metric('wer', avg_wer, step=iter_meter.get())
     # print(
-    #     'Test set: Average loss: {:.4f}, Average CER: {:4f} Average WER: {:.4f}\n'
-    #     .format(test_loss, avg_cer, avg_wer))
-    print('Test set: Average loss: {:.4f}, Average WER: {:.4f}\n'.format(
-        test_loss, avg_wer))
+    #     'Val set: Average loss: {:.4f}, Average CER: {:4f} Average WER: {:.4f}\n'
+    #     .format(val_loss, avg_cer, avg_wer))
+    print('Val set: Average loss: {:.4f}, Average WER: {:.4f}\n'.format(
+        val_loss, avg_wer))
     torch.save(
         model.state_dict(), './logs/epoch%d-val_loss%.4f-avg_wer%.4f.pth' %
-        (epoch, test_loss, avg_wer))
+        (epoch, val_loss, avg_wer))
+    return train_loss, val_loss, avg_wer
 
 
 def main(learning_rate=5e-4,
-         batch_size=20,
-         epochs=10,
+         batch_size=8,
+         epochs=2,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
         "n_cnn_layers": 3,
@@ -147,7 +158,7 @@ def main(learning_rate=5e-4,
 
     train_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
-    test_dataset = Aduio_DataLoader(
+    val_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\val')
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
@@ -159,8 +170,8 @@ def main(learning_rate=5e-4,
         num_workers=0,
         pin_memory=True)
 
-    test_loader = data.DataLoader(
-        dataset=test_dataset,
+    val_loader = data.DataLoader(
+        dataset=val_dataset,
         batch_size=hparams['batch_size'],
         shuffle=False,
         collate_fn=lambda x: data_processing(x, 'val'),
@@ -181,16 +192,39 @@ def main(learning_rate=5e-4,
                                               steps_per_epoch=int(
                                                   len(train_loader)),
                                               epochs=hparams['epochs'],
-                                              anneal_strategy='linear')
+                                              anneal_strategy='cos')
     train_data_len = len(train_loader.dataset)
     train_epoch_size = math.ceil(train_data_len / batch_size)
-    val_data_len = len(test_loader.dataset)
+    val_data_len = len(val_loader.dataset)
     val_epoch_size = math.ceil(val_data_len / batch_size)
     iter_meter = IterMeter()
+    train_losses, val_losses, wers, lr = [], [], [], []
     for epoch in range(1, epochs + 1):
-        train(model, device, train_loader, test_loader, criterion, optimizer,
-              scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
-              iter_meter, experiment)
+        train_loss, val_loss, avg_wer = train(model, device, train_loader,
+                                              val_loader, criterion, optimizer,
+                                              scheduler, epochs, epoch,
+                                              train_epoch_size, val_epoch_size,
+                                              iter_meter, experiment)
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        wers.append(avg_wer)
+    # 繪製圖
+    plt.figure()
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.plot(train_losses, label='Train Loss')
+    plt.plot(val_losses, label='Val Loss')
+    plt.legend(loc='best')
+    plt.savefig('./images/loss.jpg')
+    plt.show()
+
+    plt.figure()
+    plt.xlabel('Epochs')
+    plt.ylabel('WER')
+    plt.plot(wers, label='WER')
+    plt.legend(loc='best')
+    plt.savefig('./images/wer.jpg')
+    plt.show()
 
 
 if __name__ == "__main__":
