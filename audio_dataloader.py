@@ -11,6 +11,32 @@ import torchaudio
 from torch.utils import data
 
 
+def main():
+    train_set = Aduio_DataLoader(
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
+    train_loader = DataLoader(dataset=train_set,
+                              batch_size=1,
+                              shuffle=False,
+                              collate_fn=lambda x: data_processing(x, 'train'))
+
+    # train_url = "train-clean-100"
+    # train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
+    #                                                 url=train_url,
+    #                                                 download=True)
+    # train_loader = data.DataLoader(
+    #     dataset=train_dataset,
+    #     batch_size=20,
+    #     shuffle=True,
+    #     num_workers=0,
+    #     pin_memory=True,
+    #     collate_fn=lambda x: data_processing(x, 'train'))
+
+    for (i, data) in enumerate(train_loader):
+        spectrograms, labels, input_lengths, label_lengths, filename = data
+        print(filename)
+        print(labels)
+
+
 class Aduio_DataLoader(Dataset):
     def __init__(self, data_folder, sr=16000, dimension=320000):
         self.data_folder = data_folder
@@ -46,34 +72,12 @@ class Aduio_DataLoader(Dataset):
         waveform = torch.tensor(wb_wav)
         sample_rate = sr
 
-        return waveform, sample_rate, utterance
+        return waveform, sample_rate, utterance, filename
 
     def __len__(self):
         # 音訊檔的總數
         return len(self.wav_list)
 
 
-# train_set = Aduio_DataLoader(
-#     r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
-# train_loader = DataLoader(dataset=train_set,
-#                           batch_size=8,
-#                           shuffle=False,
-#                           collate_fn=lambda x: data_processing(x, 'train'))
-
-# train_url = "train-clean-100"
-
-# train_dataset = torchaudio.datasets.LIBRISPEECH("./data",
-#                                                 url=train_url,
-#                                                 download=True)
-
-# train_loader = data.DataLoader(
-#     dataset=train_dataset,
-#     batch_size=20,
-#     shuffle=True,
-#     num_workers=0,
-#     pin_memory=True,
-#     collate_fn=lambda x: data_processing(x, 'train'))
-
-# for (i, data) in enumerate(train_loader):
-#     spectrograms, labels, input_lengths, label_lengths = data
-#     print(input_lengths)
+if __name__ == "__main__":
+    main()

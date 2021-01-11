@@ -53,7 +53,7 @@ def train(model, device, train_loader, val_loader, criterion, optimizer,
               mininterval=0.3) as pbar:
         with experiment.train():
             for batch_idx, _data in enumerate(train_loader):
-                spectrograms, labels, input_lengths, label_lengths = _data
+                spectrograms, labels, input_lengths, label_lengths, _ = _data
                 # print(input_lengths)
                 spectrograms, labels = spectrograms.to(device), labels.to(
                     device)
@@ -95,7 +95,7 @@ def train(model, device, train_loader, val_loader, criterion, optimizer,
         with experiment.test():
             with torch.no_grad():
                 for I, _data in enumerate(val_loader):
-                    spectrograms, labels, input_lengths, label_lengths = _data
+                    spectrograms, labels, input_lengths, label_lengths, _ = _data
                     spectrograms, labels = spectrograms.to(device), labels.to(
                         device)
                     output = model(spectrograms)  # (batch, time, n_class)
@@ -161,7 +161,6 @@ def main(learning_rate=5e-4,
     val_dataset = Aduio_DataLoader(
         r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\val')
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = data.DataLoader(
         dataset=train_dataset,
         batch_size=hparams['batch_size'],
