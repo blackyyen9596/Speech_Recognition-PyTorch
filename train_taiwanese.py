@@ -16,7 +16,7 @@ from audio_dataloader import Aduio_DataLoader
 import matplotlib.pyplot as plt
 
 # RuntimeError: CUDA error: unspecified launch failure
-# os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 if torch.cuda.is_available():
     device = torch.device('cuda')
@@ -54,7 +54,7 @@ def train(model, device, train_loader, val_loader, criterion, optimizer,
         with experiment.train():
             for batch_idx, _data in enumerate(train_loader):
                 spectrograms, labels, input_lengths, label_lengths = _data
-                print(input_lengths)
+                # print(input_lengths)
                 spectrograms, labels = spectrograms.to(device), labels.to(
                     device)
                 optimizer.zero_grad()
@@ -136,8 +136,8 @@ def train(model, device, train_loader, val_loader, criterion, optimizer,
 
 
 def main(learning_rate=5e-4,
-         batch_size=8,
-         epochs=2,
+         batch_size=10,
+         epochs=50,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
         "n_cnn_layers": 3,
