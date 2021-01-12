@@ -38,7 +38,7 @@ def main():
 
 
 class Aduio_DataLoader(Dataset):
-    def __init__(self, data_folder, sr=16000, dimension=320000):
+    def __init__(self, data_folder, sr=16000, dimension=480000):
         self.data_folder = data_folder
         self.sr = sr
         self.dim = dimension
@@ -62,12 +62,12 @@ class Aduio_DataLoader(Dataset):
         wb_wav, sr = librosa.load(filepath, sr=self.sr)
 
         #固定音頻長度
-        # if len(wb_wav) > self.dim:
-        #     max_audio_start = len(wb_wav) - self.dim
-        #     audio_start = np.random.randint(0, max_audio_start)
-        #     wb_wav = wb_wav[audio_start:audio_start + self.dim]
-        # else:
-        #     wb_wav = np.pad(wb_wav, (0, self.dim - len(wb_wav)), "constant")
+        if len(wb_wav) > self.dim:
+            max_audio_start = len(wb_wav) - self.dim
+            audio_start = np.random.randint(0, max_audio_start)
+            wb_wav = wb_wav[audio_start:audio_start + self.dim]
+        else:
+            wb_wav = np.pad(wb_wav, (0, self.dim - len(wb_wav)), "constant")
 
         waveform = torch.tensor(wb_wav)
         sample_rate = sr
