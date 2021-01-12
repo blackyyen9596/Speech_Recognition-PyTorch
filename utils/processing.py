@@ -8,7 +8,7 @@ class TextTransform:
     def __init__(self):
         char_map_str = """
         ' 0
-        &lt;SPACE&gt; 1
+        &lt;space&gt; 1
         a 2
         b 3
         c 4
@@ -49,8 +49,7 @@ class TextTransform:
         int_sequence = []
         for c in text:
             if c == ' ':
-                # ch = self.char_map['']
-                ch = 0
+                ch = self.char_map['&lt;space&gt;']
             else:
                 ch = self.char_map[c]
             int_sequence.append(ch)
@@ -61,7 +60,7 @@ class TextTransform:
         string = []
         for i in labels:
             string.append(self.index_map[i])
-        return ''.join(string)
+        return ''.join(string).replace('', ' ')
 
 
 train_audio_transforms = nn.Sequential(
