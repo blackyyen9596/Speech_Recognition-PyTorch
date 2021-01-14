@@ -7,3 +7,4 @@
 3. ##### 編輯距離WER/CER計算的一種python實現 @[zwglory](https://blog.csdn.net/baobao3456810/article/details/107381052)
 4. ##### HResults計算字錯率(WER)、句錯率(SER) @[Findyou](https://www.cnblogs.com/findyou/p/10646312.html) 
 5. ##### 語音識別CER計算 @[Jack](https://zhuanlan.zhihu.com/p/114414797) 
+6. ##### Model training with automatic mixed precision is not learning @[miken Michael Nguyen](https://discuss.pytorch.org/t/model-training-with-automatic-mixed-precision-is-not-learning/75756) 

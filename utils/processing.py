@@ -60,7 +60,7 @@ class TextTransform:
         string = []
         for i in labels:
             string.append(self.index_map[i])
-        return ''.join(string).replace('', ' ')
+        return ''.join(string)
 
 
 train_audio_transforms = nn.Sequential(

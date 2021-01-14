@@ -1,5 +1,6 @@
 import torch
 import torchaudio
+from torch.optim import lr_scheduler
 import torch.nn as nn
 from torch.utils import data
 import torch.optim as optim
@@ -38,111 +39,14 @@ class IterMeter(object):
         return self.val
 
 
-def train(model, device, train_loader, val_loader, criterion, optimizer,
-          scheduler, epochs, epoch, train_epoch_size, val_epoch_size,
-          iter_meter, experiment):
-    print('running epoch: {} / {}'.format(epoch, epochs))
-    start_time = time.time()
-    # 訓練模式
-    model.train()
-    data_len = len(train_loader.dataset)
-
-    with tqdm(total=train_epoch_size,
-              desc='train',
-              postfix=dict,
-              mininterval=0.3) as pbar:
-        with experiment.train():
-            for batch_idx, _data in enumerate(train_loader):
-                spectrograms, labels, input_lengths, label_lengths, _ = _data
-                # print(input_lengths)
-                spectrograms, labels = spectrograms.to(device), labels.to(
-                    device)
-                optimizer.zero_grad()
-                output = model(spectrograms)  # (batch, time, n_class)
-                output = F.log_softmax(output, dim=2)
-                output = output.transpose(0, 1)  # (time, batch, n_class)
-                loss = criterion(output, labels, input_lengths, label_lengths)
-
-                loss.backward()
-                experiment.log_metric('loss',
-                                      loss.item(),
-                                      step=iter_meter.get())
-                experiment.log_metric('learning_rate',
-                                      scheduler.get_last_lr(),
-                                      step=iter_meter.get())
-                optimizer.step()
-                scheduler.step()
-                iter_meter.step()
-
-                waste_time = time.time() - start_time
-                train_loss = loss.item()
-                pbar.set_postfix(
-                    **{
-                        'total_loss': train_loss,
-                        'lr': round(scheduler.get_last_lr()[0], 5),
-                        'step/s': waste_time
-                    })
-                pbar.update(1)
-                start_time = time.time()
-
-    start_time = time.time()
-    # 評估模式
-    model.eval()
-    val_loss = 0
-    val_cer, val_wer = [], []
-    with tqdm(total=val_epoch_size, desc='val', postfix=dict,
-              mininterval=0.3) as pbar:
-        with experiment.test():
-            with torch.no_grad():
-                for I, _data in enumerate(val_loader):
-                    spectrograms, labels, input_lengths, label_lengths, _ = _data
-                    spectrograms, labels = spectrograms.to(device), labels.to(
-                        device)
-                    output = model(spectrograms)  # (batch, time, n_class)
-                    output = F.log_softmax(output, dim=2)
-                    output = output.transpose(0, 1)  # (time, batch, n_class)
-                    loss = criterion(output, labels, input_lengths,
-                                     label_lengths)
-                    val_loss += loss.item() / len(val_loader)
-                    decoded_preds, decoded_targets = GreedyDecoder(
-                        output.transpose(0, 1), labels, label_lengths)
-                    for j in range(len(decoded_preds)):
-                        # val_cer.append(cer(decoded_targets[j], decoded_preds[j]))
-                        val_wer.append(
-                            wer(reference=decoded_targets[j],
-                                hypothesis=decoded_preds[j]))
-                    waste_time = time.time() - start_time
-                    val_loss = loss.item()
-                    pbar.set_postfix(**{
-                        'total_loss': val_loss,
-                        'step/s': waste_time
-                    })
-                    pbar.update(1)
-                    start_time = time.time()
-    # avg_cer = sum(val_cer) / len(val_cer)
-    avg_wer = sum(val_wer) / len(val_wer)
-    experiment.log_metric('val_loss', val_loss, step=iter_meter.get())
-    # experiment.log_metric('cer', avg_cer, step=iter_meter.get())
-    experiment.log_metric('wer', avg_wer, step=iter_meter.get())
-    # print(
-    #     'Val set: Average loss: {:.4f}, Average CER: {:4f} Average WER: {:.4f}\n'
-    #     .format(val_loss, avg_cer, avg_wer))
-    print('Val set: Average loss: {:.4f}, Average WER: {:.4f}\n'.format(
-        val_loss, avg_wer))
-    torch.save(
-        model.state_dict(), './logs/epoch%d-val_loss%.4f-avg_wer%.4f.pth' %
-        (epoch, val_loss, avg_wer))
-    return train_loss, val_loss, avg_wer
-
-
 def main(learning_rate=5e-4,
-         batch_size=10,
-         epochs=50,
+         batch_size=5,
+         epochs=1,
          experiment=Experiment(api_key='dummy_key', disabled=True)):
     hparams = {
         "n_cnn_layers": 3,
-        "n_rnn_layers": 5,
-        "rnn_dim": 512,
+        "n_rnn_layers": 7,
+        "rnn_dim": 1024,
         "n_class": 29,
         "n_feats": 128,
         "stride": 2,
@@ -157,9 +61,17 @@ def main(learning_rate=5e-4,
     device = torch.device("cuda" if use_cuda else "cpu")
 
     train_dataset = Aduio_DataLoader(
-        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train')
+        data_folder=r'D:\dataset\ntut-ml-2020-taiwanese-e2e\train',
+        utterance_csv=
+        r'D:\dataset\ntut-ml-2020-taiwanese-e2e\train-toneless_update.csv',
+        sr=16000,
+        dimension=480000)
     val_dataset = Aduio_DataLoader(
-        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\val')
+        data_folder=r'D:\dataset\ntut-ml-2020-taiwanese-e2e\val',
+        utterance_csv=
+        r'D:\dataset\ntut-ml-2020-taiwanese-e2e\train-toneless_update.csv',
+        sr=16000,
+        dimension=480000)
 
     train_loader = data.DataLoader(
         dataset=train_dataset,
@@ -186,27 +98,127 @@ def main(learning_rate=5e-4,
           sum([param.nelement() for param in model.parameters()]))
     optimizer = optim.AdamW(model.parameters(), hparams['learning_rate'])
     criterion = nn.CTCLoss(blank=28).to(device)
+    # scheduler = lr_scheduler.CosineAnnealingLR(optimizer,
+    #                                            T_max=hparams['epochs'],
+    #                                            eta_min=1e-6,
+    #                                            last_epoch=-1)
     scheduler = optim.lr_scheduler.OneCycleLR(optimizer,
                                               max_lr=hparams['learning_rate'],
                                               steps_per_epoch=int(
                                                   len(train_loader)),
                                               epochs=hparams['epochs'],
                                               anneal_strategy='cos')
+
+    scaler = torch.cuda.amp.GradScaler()
     train_data_len = len(train_loader.dataset)
     train_epoch_size = math.ceil(train_data_len / batch_size)
     val_data_len = len(val_loader.dataset)
     val_epoch_size = math.ceil(val_data_len / batch_size)
     iter_meter = IterMeter()
-    train_losses, val_losses, wers, lr = [], [], [], []
+    train_losses, val_losses, wers, lrs = [], [], [], []
     for epoch in range(1, epochs + 1):
-        train_loss, val_loss, avg_wer = train(model, device, train_loader,
-                                              val_loader, criterion, optimizer,
-                                              scheduler, epochs, epoch,
-                                              train_epoch_size, val_epoch_size,
-                                              iter_meter, experiment)
+        print('running epoch: {} / {}'.format(epoch, epochs))
+        start_time = time.time()
+        # 訓練模式
+        model.train()
+        train_loss = 0
+        with tqdm(total=train_epoch_size,
+                  desc='train',
+                  postfix=dict,
+                  mininterval=0.3) as pbar:
+            with experiment.train():
+                for batch_idx, _data in enumerate(train_loader):
+                    spectrograms, labels, input_lengths, label_lengths, _ = _data
+                    # print(input_lengths)
+                    spectrograms, labels = spectrograms.to(device), labels.to(
+                        device)
+                    optimizer.zero_grad()
+                    output = model(spectrograms)
+                    output = F.log_softmax(output, dim=2)
+                    output = output.transpose(0, 1)
+                    loss = criterion(output, labels, input_lengths,
+                                     label_lengths)
+                    loss.backward()
+                    optimizer.step()
+                    scheduler.step()
+                    experiment.log_metric('loss',
+                                          loss.item(),
+                                          step=iter_meter.get())
+                    experiment.log_metric('learning_rate',
+                                          scheduler.get_last_lr(),
+                                          step=iter_meter.get())
+                    iter_meter.step()
+                    waste_time = time.time() - start_time
+                    train_loss += loss.item() * spectrograms.size(0)
+                    pbar.set_postfix(
+                        **{
+                            'loss': loss.item(),
+                            'lr': round(scheduler.get_last_lr()[0], 6),
+                            'step/s': waste_time
+                        })
+                    pbar.update(1)
+                    start_time = time.time()
+                    lrs.append(scheduler.get_last_lr()[0])
+
+        start_time = time.time()
+        # 評估模式
+        model.eval()
+        val_loss = 0
+        val_cer, val_wer = [], []
+        with tqdm(total=val_epoch_size,
+                  desc='val',
+                  postfix=dict,
+                  mininterval=0.3) as pbar:
+            with experiment.test():
+                with torch.no_grad():
+                    for I, _data in enumerate(val_loader):
+                        spectrograms, labels, input_lengths, label_lengths, _ = _data
+                        spectrograms, labels = spectrograms.to(
+                            device), labels.to(device)
+                        output = model(spectrograms)  # (batch, time, n_class)
+                        output = F.log_softmax(output, dim=2)
+                        output = output.transpose(0,
+                                                  1)  # (time, batch, n_class)
+                        loss = criterion(output, labels, input_lengths,
+                                         label_lengths)
+                        val_loss += loss.item() * spectrograms.size(0)
+                        decoded_preds, decoded_targets = GreedyDecoder(
+                            output.transpose(0, 1), labels, label_lengths)
+                        for j in range(len(decoded_preds)):
+                            # val_cer.append(cer(decoded_targets[j], decoded_preds[j]))
+                            val_wer.append(
+                                wer(reference=decoded_targets[j],
+                                    hypothesis=decoded_preds[j]))
+                        waste_time = time.time() - start_time
+                        pbar.set_postfix(**{
+                            'loss': loss.item(),
+                            'step/s': waste_time
+                        })
+                        pbar.update(1)
+                        start_time = time.time()
+        train_loss = train_loss / len(train_loader.dataset)
+        val_loss = val_loss / len(val_loader.dataset)
         train_losses.append(train_loss)
         val_losses.append(val_loss)
+
+        # avg_cer = sum(val_cer) / len(val_cer)
+        avg_wer = sum(val_wer) / len(val_wer)
         wers.append(avg_wer)
+
+        experiment.log_metric('val_loss', val_loss, step=iter_meter.get())
+        # experiment.log_metric('cer', avg_cer, step=iter_meter.get())
+        experiment.log_metric('wer', avg_wer, step=iter_meter.get())
+        # print(
+        #     'Val set: Average loss: {:.4f}, Average CER: {:4f} Average WER: {:.4f}\n'
+        #     .format(val_loss, avg_cer, avg_wer))
+        print(
+            'average train_loss: {:.4f}, average val_loss: {:.4f}, average wer: {:.4f}\n'
+            .format(train_loss, val_loss, avg_wer))
+        torch.save(
+            model.state_dict(),
+            './logs/epoch%d-train_loss%.4f-val_loss%.4f-avg_wer%.4f.pth' %
+            (epoch, train_loss, val_loss, avg_wer))
+
     # 繪製圖
     plt.figure()
     plt.xlabel('Epochs')
@@ -223,6 +235,14 @@ def main(learning_rate=5e-4,
     plt.plot(wers, label='WER')
     plt.legend(loc='best')
     plt.savefig('./images/wer.jpg')
+    plt.show()
+
+    plt.figure()
+    plt.xlabel('Mini-batch')
+    plt.ylabel('Learning Rate')
+    plt.plot(lrs, label='Learning Rate')
+    plt.legend(loc='best')
+    plt.savefig('./images/lr.jpg')
     plt.show()
 
 

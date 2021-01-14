@@ -13,7 +13,11 @@ from torch.utils import data
 
 def main():
     train_set = Aduio_DataLoader(
-        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train', sr=16000)
+        data_folder=r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train',
+        utterance_csv=
+        r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train-toneless_update.csv',
+        sr=16000,
+        dimension=480000)
     train_loader = DataLoader(dataset=train_set,
                               batch_size=1,
                               shuffle=False,
@@ -38,10 +42,11 @@ def main():
 
 
 class Aduio_DataLoader(Dataset):
-    def __init__(self, data_folder, sr=16000, dimension=480000):
+    def __init__(self, data_folder, utterance_csv, sr=16000, dimension=8192):
         self.data_folder = data_folder
         self.sr = sr
         self.dim = dimension
+        self.utterance_csv = utterance_csv
 
         # 獲取音訊名列表
         self.wav_list = []
@@ -51,10 +56,7 @@ class Aduio_DataLoader(Dataset):
                 self.wav_list.append(os.path.join(root, filename))
 
     def __getitem__(self, item):
-        df = pd.read_csv(
-            r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\train-toneless_update.csv',
-            encoding="utf8",
-            index_col='id')
+        df = pd.read_csv(self.utterance_csv, encoding="utf8", index_col='id')
         # 讀取一個音訊檔，返回每個音訊資料
         filepath = self.wav_list[item]
         filename = os.path.split(filepath)[-1].split('.')[0]

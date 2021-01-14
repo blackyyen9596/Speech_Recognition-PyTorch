@@ -25,12 +25,12 @@ else:
 
 hparams = {
     "n_cnn_layers": 3,
-    "n_rnn_layers": 5,
-    "rnn_dim": 512,
+    "n_rnn_layers": 7,
+    "rnn_dim": 1024,
     "n_class": 29,
     "n_feats": 128,
     "stride": 2,
-    "dropout": 0.1,
+    "dropout": 0,
     "batch_size": 1,
 }
 
@@ -40,9 +40,14 @@ model = SpeechRecognitionModel(hparams['n_cnn_layers'],
                                hparams['stride'],
                                hparams['dropout']).to(device)
 model.load_state_dict(
-    torch.load(r'./weights/epoch75-val_loss0.2958-avg_wer0.0519.pth'))
+    torch.load(
+        r'./weights/epoch2-train_loss0.0252-val_loss0.3372-avg_wer0.0379.pth'))
 test_dataset = Aduio_DataLoader(
-    r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\test-shuf')
+    data_folder=r'D:\dataset\ntut-ml-2020-taiwanese-e2e\test-shuf',
+    utterance_csv=
+    r'D:\dataset\ntut-ml-2020-taiwanese-e2e\train-toneless_update.csv',
+    sr=16000,
+    dimension=480000)
 
 test_loader = data.DataLoader(dataset=test_dataset,
                               batch_size=hparams['batch_size'],
@@ -66,15 +71,15 @@ with tqdm(total=test_epoch_size, desc='test', postfix=dict,
             decoded_preds, decoded_targets = GreedyDecoder(
                 output.transpose(0, 1),
                 labels.cpu().numpy().astype(int), label_lengths)
-            pred = decoded_preds[0].replace("'", " ").strip()  #刪除前後的空格
+            pred = decoded_preds[0].replace("'", "").strip()  #刪除前後的空格
             file_list.append(filename)
             pred_list.append(pred)
             waste_time = time.time() - start_time
             pbar.set_postfix(**{'step/s': waste_time})
             pbar.update(1)
 
-id_path = r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\sample.csv'
-save_path = r'D:\dataset\ntut-ml-2020-spring-taiwanese-e2e\test.csv'
+id_path = r'D:\dataset\ntut-ml-2020-taiwanese-e2e\sample.csv'
+save_path = r'D:\dataset\ntut-ml-2020-taiwanese-e2e\test.csv'
 dictionary = {'id': file_list[:], 'text': pred_list[:]}
 final_file_list, final_pred_list = [], []
 for i in range(len(file_list)):
